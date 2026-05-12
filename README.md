@@ -9,9 +9,8 @@ https://github.com/admk/typstex
 
 - Added multi-platform support  (windows,macos,linux)
 - Works on XeLaTeX and LuaLaTeX not only on pdflatex
-- build directory is fixed to "build" because it cant  
+- build directory is fixed to "build" by setting out_dir="build" because environmental variable %TEXMF_OUTPUT_DIRECTORY% cannot be accessed  in Windows. 
 
-Since csname environment marked with an * triggers an warning in lualatex, \begin{filecontents} is recommended when using lualatex. 
 
 # TypsTeX
 
@@ -87,8 +86,9 @@ You can define a custom preamble for Typst using the filecontents environment:
 \end{filecontents}
 ```
 **Warning**
-Using \begin{filecontents*} (calling environment with asterisk) may be warned by engines like lualatex, so \begin{filecontents} is recommended. 
-However,  \begin{filecontents*}[overwrite]{typst_premble.typ} also works.
+Using \begin{filecontents* } (calling environment with asterisk) may be warned by engines like lualatex, so \begin{filecontents} is recommended. 
+However,  \begin{filecontents* }[overwrite]{typst_premble.typ} also works.
+
 
 ### Passing Flags to Typst Compiler
 
@@ -99,15 +99,49 @@ Customize the Typst compiler flags by redefining the `\typstflags` command:
 
 ### Compiling the Document
 
-  1. Run `latexmk --shell-escape  --out-dir="build" example.tex`.
-     It requires `--shell-escape` enabled in LaTeX for external command execution.
-  2. The output PDF will embed the rendered Typst content.
+latexmk -latex=pdflatex -latexoption="--shell-escape --enable-write18" -outdir="build" example.tex
+  1. Set latexmkrc as follows (recommended)
 
-## recommended .latexmkrc
+  ```~/.latexmkrc
+    $pdflatex='pdflatex --enable-write18 -file-line-error -shell-escape %O %S ';
+    $lualatex='lualatex --synctex=1 -file-line-error  -shell-escape %O %S';
+    $xelatex ='xelatex --synctex=1 -file-line-error  --shell-escape %O %S';
+    $out_dir='build';
+    
+    $dvipdf = 'dvipdfmx %O -o %D %S';
+    $pvc_view_file_via_temporary = 0;
+    # Option to generate PDF
+    ## $pdf_mode = 0; not generate pdf files
+    ## $pdf_mode = 1; generate pdf using $pdflatex
+    ## $pdf_mode = 2; generate pdf via .ps file using $ps2pdf
+    ## pdf_mode = 3; generate pdf via .dvi file using $dvipdf
+    ## $pdf_mode = 4;generate pdf via .dvi file using $lualatex
+    ## $pdf_mode = 5; generate pdf via .xdv file using $xdvipdfmx
+    $pdf_mode = 1; ##pdflatex
+    $out_dir='build';
+  ```
+     It requires `--shell-escape` enabled  for external command execution.
+  2. Run `latexmk -outdir="build" --shell-escape example.tex`.
+     It requires `--shell-escape` enabled  for external command execution.
+  3. The output PDF will embed the rendered Typst content.
+
+## required .latexmkrc
   ```.latexmkrc
     $pdflatex='pdflatex --enable-write18 -file-line-error -shell-escape %O %S ';
     $lualatex='lualatex --synctex=1 -file-line-error  -shell-escape %O %S';
-    $xelatex ='xelatex --synctex=1 --shell-escape %O %S';
+    $xelatex ='xelatex --synctex=1 -file-line-error  --shell-escape %O %S';
+    $out_dir='build';
+    
+    $dvipdf = 'dvipdfmx %O -o %D %S';
+    $pvc_view_file_via_temporary = 0;
+    # Option to generate PDF
+    ## $pdf_mode = 0; not generate pdf files
+    ## $pdf_mode = 1; generate pdf using $pdflatex
+    ## $pdf_mode = 2; generate pdf via .ps file using $ps2pdf
+    ## pdf_mode = 3; generate pdf via .dvi file using $dvipdf
+    ## $pdf_mode = 4;generate pdf via .dvi file using $lualatex
+    ## $pdf_mode = 5; generate pdf via .xdv file using $xdvipdfmx
+    $pdf_mode = 1;
     $out_dir='build';
   ```
 ## Structure

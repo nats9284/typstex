@@ -17,7 +17,11 @@
 
 \NewDocumentEnvironment{typst}{m}{%
     \stepcounter{@typstsrc}
-    \def\@outdir{build}%
+    \def\@outdir{$TEXMF_OUTPUT_DIRECTORY}%
+
+    \ifwindows
+        \def\@outdir{build}%
+    \fi
     \def\@typstfn{\jobname-\the@typstsrc}%
     \csname filecontents\endcsname[overwrite]{\@typstfn.raw}%
     \def\@abstypstfn{\@outdir/\@typstfn}%
@@ -42,7 +46,7 @@
           % if md5 changed, compile the file
           \IfFileExists{\@abstypstfn.changed}{%
               \pdf@system{cmd /C "cd \@outdir \@space & findstr /V \%\% \@typstfn.typ >> \@typstfn_converted.typ"}
-              \pdf@system{cmd /C "typst compile \typstflags \@space \@abstypstfn_converted.typ \@abstypstfn.pdf >> \@abstypstfn.log"}
+              \pdf@system{cmd /C "typst compile \typstflags \@space \@abstypstfn_converted.typ \@abstypstfn.pdf 2>> \@abstypstfn.log"}
           \pdf@system{cmd /C "cd \@outdir \@space & move /Y \@typstfn.new.md5 \@typstfn.md5"}
           }{%
               \pdf@system{cmd /C "cd \@outdir \@space & del /F \@typstfn.new.md5"}
@@ -59,7 +63,7 @@
           \IfFileExists{\@abstypstfn.changed}{%
 
               \pdf@system{grep -v '^\%\%' \@abstypstfn.typ >> \@abstypstfn_converted.typ}
-              \pdf@system{typst compile \typstflags \@space \@abstypstfn.typ \@abstypstfn.pdf > \@abstypstfn.log}
+              \pdf@system{typst compile \typstflags \@space \@abstypstfn.typ \@abstypstfn.pdf 2> \@abstypstfn.log}
               \pdf@system{mv \@abstypstfn.new.md5 \@abstypstfn.md5}
           }{%
               \pdf@system{rm \@abstypstfn.new.md5}
