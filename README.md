@@ -1,3 +1,18 @@
+## Credits
+
+This project is based on the original work by admk[https://github.com/admk].
+
+Original repository:
+https://github.com/admk/typstex
+
+## Changes in This Fork
+
+- Added multi-platform support  (windows,macos,linux)
+- Works on XeLaTeX and LuaLaTeX not only on pdflatex
+- build directory is fixed to "build" because it cant  
+
+Since csname environment marked with an * triggers an warning in lualatex, \begin{filecontents} is recommended when using lualatex. 
+
 # TypsTeX
 
 TypsTeX is a LaTeX package
@@ -38,7 +53,7 @@ in your LaTeX documents directly.
 - LaTeX: A working LaTeX distribution.
 - Typst: Ensure the Typst CLI is installed,
   and accessible via `typst` in the command line.
-- POSIX-compliant shell: `echo`, `cat`, `md5sum`, `cmp`, `rm`, `mv`, `mkdir`.
+- POSIX-compliant shell  (Linux, MacOS, Cygwin) or PowerShell, cmdprompt (Windows)
 
 ## Usage
 
@@ -63,13 +78,17 @@ You can replace `scale=1` with any other `\includegraphics` options.
 
 ### Customize the Typst Preamble
 
-You can define a custom preamble for Typst using the filecontents* environment:
+
+You can define a custom preamble for Typst using the filecontents environment:
 ```latex
-\begin{filecontents*}[overwrite]{typst_premble.typ}
+\begin{filecontents}[overwrite]{typst_premble.typ}
     #set page(width: auto, height: auto, margin: 0.5em)
     // Your extra Typst preamble here...
-\end{filecontents*}
+\end{filecontents}
 ```
+**Warning**
+Using \begin{filecontents*} (calling environment with asterisk) may be warned by engines like lualatex, so \begin{filecontents} is recommended. 
+However,  \begin{filecontents*}[overwrite]{typst_premble.typ} also works.
 
 ### Passing Flags to Typst Compiler
 
@@ -80,10 +99,17 @@ Customize the Typst compiler flags by redefining the `\typstflags` command:
 
 ### Compiling the Document
 
-  1. Run `pdflatex --shell-escape example.tex`.
+  1. Run `latexmk --shell-escape  --out-dir="build" example.tex`.
      It requires `--shell-escape` enabled in LaTeX for external command execution.
   2. The output PDF will embed the rendered Typst content.
 
+## recommended .latexmkrc
+  ```.latexmkrc
+    $pdflatex='pdflatex --enable-write18 -file-line-error -shell-escape %O %S ';
+    $lualatex='lualatex --synctex=1 -file-line-error  -shell-escape %O %S';
+    $xelatex ='xelatex --synctex=1 --shell-escape %O %S';
+    $out_dir='build';
+  ```
 ## Structure
 
 - `typst.sty`:
@@ -94,8 +120,8 @@ Customize the Typst compiler flags by redefining the `\typstflags` command:
   - Detecting content changes to avoid redundant compilations.
   - Embedding the generated PDFs in LaTeX documents.
 
-- `example.tex`:
-  An example LaTeX document that demonstrates the use of the typst package.
+- `example_**tex.tex`:
+  An example LuaLaTeX document that demonstrates the use of the typst package.
   It includes:
   - How to set up Typst preambles.
   - Examples of embedding Typst code snippets.

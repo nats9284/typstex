@@ -2,46 +2,78 @@
 \RequirePackage{graphicx}
 \RequirePackage{filecontents}
 \RequirePackage{xparse}
+\RequirePackage{ifplatform}
+
 
 \makeatletter
 \newcommand{\typstflags}{}
 \newcounter{@typstsrc}
 \newcommand{\@space}{ }
+\newcommand{\@premblefn}{typst_premble.typ}
 
-\begin{filecontents*}{typst_premble.typ}
+\begin{filecontents}{typst_premble.typ}
 #set page(width: auto, height: auto, margin: 0em)
-\end{filecontents*}
+\end{filecontents}
 
 \NewDocumentEnvironment{typst}{m}{%
     \stepcounter{@typstsrc}
+    \def\@outdir{build}%
     \def\@typstfn{\jobname-\the@typstsrc}%
-    \csname filecontents*\endcsname[overwrite]{\@typstfn.raw}%
-    \def\@abstypstfn{$TEXMF_OUTPUT_DIRECTORY/\@typstfn}%
-    \def\@abspremblefn{$TEXMF_OUTPUT_DIRECTORY/typst_premble.typ}%
+    \csname filecontents\endcsname[overwrite]{\@typstfn.raw}%
+    \def\@abstypstfn{\@outdir/\@typstfn}%
+    \def\@abspremblefn{\@outdir/\@premblefn}%
 }{%
-    \csname endfilecontents*\endcsname%
+    \csname endfilecontents\endcsname%
     \IfFileExists{\@typstfn.raw}{%
-        % generate the file to be compiled
-        \immediate\write18{echo "// flags: \typstflags\\n" | cat - \@abstypstfn.flags \@abspremblefn \@space \@abstypstfn.raw > \@abstypstfn.typ}
-        % compute md5 hash of the file
-        \immediate\write18{md5sum \@abstypstfn.typ > \@abstypstfn.new.md5}
-        % check md5 match, generate .changed file if not matched
-        \immediate\write18{cmp -s \@abstypstfn.new.md5 \@abstypstfn.md5 || touch \@abstypstfn.changed}
-        % if md5 changed, compile the file
-        \IfFileExists{\@abstypstfn.changed}{%
-            \immediate\write18{typst compile \typstflags \@space \@abstypstfn.typ \@abstypstfn.pdf > \@abstypstfn.log}
-            \immediate\write18{mv \@abstypstfn.new.md5 \@abstypstfn.md5}
-        }{%
-            \immediate\write18{rm \@abstypstfn.new.md5}
-        }
-        \immediate\write18{rm \@abstypstfn.changed \@abstypstfn.raw \@abstypstfn.flags}
+
+        \ifwindows
+          % generate the file to be compiled
+          \pdf@system{cmd /C "echo // flags: \typstflags \@space > \@space \@abstypstfn.typ"}
+          \IfFileExists{\@abstypstfn.flags}{%
+              \pdf@system{cmd /C "cd \@outdir \@space & type \@typstfn.flags \@space \@premblefn \@space \@typstfn.raw \@space >> \@typstfn.typ"}
+  
+          }{%
+              \pdf@system{cmd /C "cd \@outdir \@space & type \@premblefn \@space \@typstfn.raw >> \@typstfn.typ"}
+          }
+          % compute md5 hash of the file
+          \pdf@system{cmd /C "certutil -hashfile \@abstypstfn.typ MD5 > \@abstypstfn.new.md5 "}
+          % check md5 match, generate .changed file if not matched
+          \pdf@system{cmd /C "cd \@outdir \@space & fc /B \@typstfn.new.md5 \@typstfn.md5 & if errorlevel 1 (type nul > \@typstfn.changed)"}
+          % if md5 changed, compile the file
+          \IfFileExists{\@abstypstfn.changed}{%
+              \pdf@system{cmd /C "cd \@outdir \@space & findstr /V \%\% \@typstfn.typ >> \@typstfn_converted.typ"}
+              \pdf@system{cmd /C "typst compile \typstflags \@space \@abstypstfn_converted.typ \@abstypstfn.pdf >> \@abstypstfn.log"}
+          \pdf@system{cmd /C "cd \@outdir \@space & move /Y \@typstfn.new.md5 \@typstfn.md5"}
+          }{%
+              \pdf@system{cmd /C "cd \@outdir \@space & del /F \@typstfn.new.md5"}
+          }
+          \pdf@system{cmd /C "cd \@outdir \@space & del /F \@typstfn.changed \@typstfn.raw"}
+        \else
+          % generate the file to be compiled
+          \pdf@system{echo "// flags: \typstflags\\n" | cat - \@abstypstfn.flags \@abspremblefn \@space \@abstypstfn.raw > \@abstypstfn.typ}
+          % compute md5 hash of the file
+          \pdf@system{shasum \@abstypstfn.typ > \@abstypstfn.new.md5}
+          % check md5 match, generate .changed file if not matched
+          \pdf@system{cmp -s \@abstypstfn.new.md5 \@abstypstfn.md5 || touch \@abstypstfn.changed}
+          % if md5 changed, compile the file
+          \IfFileExists{\@abstypstfn.changed}{%
+
+              \pdf@system{grep -v '^\%\%' \@abstypstfn.typ >> \@abstypstfn_converted.typ}
+              \pdf@system{typst compile \typstflags \@space \@abstypstfn.typ \@abstypstfn.pdf > \@abstypstfn.log}
+              \pdf@system{mv \@abstypstfn.new.md5 \@abstypstfn.md5}
+          }{%
+              \pdf@system{rm \@abstypstfn.new.md5}
+          }
+          \pdf@system{rm \@abstypstfn.changed \@abstypstfn.raw \@abstypstfn.flags}
+      \fi
+
     }{%
         \PackageError{typst}{Failed to write Typst source code for \@typstfn.typ}{}
     }
     \IfFileExists{\@typstfn.pdf}{%
         \includegraphics[#1]{\@typstfn.pdf}%
     }{%
-        \PackageError{typst}{Failed to compile Typst source code for \@typstfn.typ}{}
+        \PackageError{typst}{Failed to include graphics for \@typstfn.typ}{}
     }
 }
 \makeatother
