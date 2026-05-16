@@ -8,8 +8,7 @@ https://github.com/admk/typstex
 ## Changes in This Fork
 
 - Added multi-platform support  (windows,macos,linux)
-- Works on XeLaTeX and LuaLaTeX not only on pdflatex
-- build directory is fixed to "build" by setting out_dir="build" because environmental variable %TEXMF_OUTPUT_DIRECTORY% cannot be accessed  in Windows. 
+- Works on 4 engines (XeLaTeX, LuaLaTeX, PDFLaTeX, and Tectonic)
 
 
 # TypsTeX
@@ -99,8 +98,7 @@ Customize the Typst compiler flags by redefining the `\typstflags` command:
 
 ### Compiling the Document
 
-latexmk -latex=pdflatex -latexoption="--shell-escape --enable-write18" -outdir="build" example.tex
-  1. Set latexmkrc as follows (recommended)
+  1. Set latexmkrc as follows (optional, and tectonic users dont need it )
 
   ```~/.latexmkrc
     $pdflatex='pdflatex --enable-write18 -file-line-error -shell-escape %O %S ';
@@ -114,36 +112,41 @@ latexmk -latex=pdflatex -latexoption="--shell-escape --enable-write18" -outdir="
     ## $pdf_mode = 0; not generate pdf files
     ## $pdf_mode = 1; generate pdf using $pdflatex
     ## $pdf_mode = 2; generate pdf via .ps file using $ps2pdf
-    ## pdf_mode = 3; generate pdf via .dvi file using $dvipdf
+    ## $pdf_mode = 3; generate pdf via .dvi file using $dvipdf
     ## $pdf_mode = 4;generate pdf via .dvi file using $lualatex
     ## $pdf_mode = 5; generate pdf via .xdv file using $xdvipdfmx
-    $pdf_mode = 1; ##pdflatex
     $out_dir='build';
   ```
      It requires `--shell-escape` enabled  for external command execution.
-  2. Run `latexmk -outdir="build" --shell-escape example.tex`.
-     It requires `--shell-escape` enabled  for external command execution.
+
+  2. Run
+    ```bash
+    latexmk -latex=<latex-compile-engine> -latexoption="--shell-escape" -outdir="build" example.tex`.
+    ```
+    <latex-compile-engine> is pdflatex, xelatex, lualatex
+    It requires `--shell-escape` enabled  for external command execution.
+
   3. The output PDF will embed the rendered Typst content.
 
-## required .latexmkrc
-  ```.latexmkrc
-    $pdflatex='pdflatex --enable-write18 -file-line-error -shell-escape %O %S ';
-    $lualatex='lualatex --synctex=1 -file-line-error  -shell-escape %O %S';
-    $xelatex ='xelatex --synctex=1 -file-line-error  --shell-escape %O %S';
-    $out_dir='build';
-    
-    $dvipdf = 'dvipdfmx %O -o %D %S';
-    $pvc_view_file_via_temporary = 0;
-    # Option to generate PDF
-    ## $pdf_mode = 0; not generate pdf files
-    ## $pdf_mode = 1; generate pdf using $pdflatex
-    ## $pdf_mode = 2; generate pdf via .ps file using $ps2pdf
-    ## pdf_mode = 3; generate pdf via .dvi file using $dvipdf
-    ## $pdf_mode = 4;generate pdf via .dvi file using $lualatex
-    ## $pdf_mode = 5; generate pdf via .xdv file using $xdvipdfmx
-    $pdf_mode = 1;
-    $out_dir='build';
-  ```
+For [tectonic] (https://github.com/tectonic-typesetting/tectonic) users:  
+```bash
+mkdir build
+tectonic -X compile --outdir="build" --reruns 0 -Zshell-escape-cwd=. example_tectonic.tex
+```
+It requires `-Z shell-escape` enabled  and -Zuntrusted flags disabled
+`reruns 0` flag is necessary to prevent compilation repeats.
+
+
+
+** note **
+- On Windows, you have to set -outdir to "build" but if you want to customize output directory, edit typst.sty and 
+change this part
+\ifwindows
+---    \def\@outdir{build}%
++++    \def\@outdir{your_output_dir}
+\fi
+
+
 ## Structure
 
 - `typst.sty`:
@@ -155,7 +158,7 @@ latexmk -latex=pdflatex -latexoption="--shell-escape --enable-write18" -outdir="
   - Embedding the generated PDFs in LaTeX documents.
 
 - `example_**tex.tex`:
-  An example LuaLaTeX document that demonstrates the use of the typst package.
+  An example document that demonstrates the use of the typst package.
   It includes:
   - How to set up Typst preambles.
   - Examples of embedding Typst code snippets.
@@ -165,8 +168,6 @@ latexmk -latex=pdflatex -latexoption="--shell-escape --enable-write18" -outdir="
 
 Feel free to submit issues or pull requests to improve this package.
 
-Bugs:
-- [ ] `typst compile` log files are not written for unknown reasons.
 
 Features that may be added in the future:
 - [ ] `typst query` support.
@@ -176,7 +177,7 @@ Features that may be added in the future:
 - [ ] A gallery of examples and use cases.
 - [ ] CI workflow for automated testing and gallery compilation.
 - [ ] Custom figure names for Typst output.
-- [ ] Inline LaTeX commands in Typst code (I don't know if this is possible).
+- [ ] Inline LaTeX commands in Typst code (I don't know if this is possible). -> [mitex] could be a good choice
 
 [typst]: https://typst.app/docs/
 [latex]: https://www.latex-project.org/
